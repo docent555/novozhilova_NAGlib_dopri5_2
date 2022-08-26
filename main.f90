@@ -33,11 +33,11 @@ program sys15f
     write (*, '(/)')
     print *, 'Calcualting took:', hours, 'h :', minutes, 'm :', seconds, 's'
 
-    do i = 2, nt
-        do j = 1, 3
-            w(j, i - 1) = (f(2*j, i) - f(2*j, i - 1))/dt
-        end do
-    end do
+    !do i = 2, nt
+    !    do j = 1, 3
+    !        w(j, i - 1) = (f(2*j, i) - f(2*j, i - 1))/dt
+    !    end do
+    !end do
 
     phi(:, 1) = 0; 
     do i = 2, nt

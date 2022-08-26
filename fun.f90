@@ -2,7 +2,7 @@ module fun
     use, intrinsic :: iso_c_binding
     use ifcore
 
-    integer(c_int) ne, nt, nz, neqf, neqp, lworkp, liworkp, nrdf, nrdp, iparf, iparp, ioutf, ioutp, ididf, ididp, itolf, itolp, lenwrkf
+ integer(c_int) ne, nt, nz, neqf, neqp, lworkp, liworkp, nrdf, nrdp, iparf, iparp, ioutf, ioutp, ididf, ididp, itolf, itolp, lenwrkf
     real(c_double) zex, dz, tend, dtr(2), q(3), i(2), th(2), a(2), dcir(2), r(2), f0(3), dt, &
         pitch, f10, f20, f30, rtolf, rtolp, atolf, atolp, rparf, rparp, ftol, ptol, ng
     complex(c_double_complex) fp(2)
@@ -14,13 +14,13 @@ module fun
     integer(c_int), allocatable, target :: idxre(:, :), idxim(:, :), iworkf(:), iworkp(:)
     complex(c_double_complex), allocatable, target :: mean(:)
     real(c_double), allocatable, target :: tax(:), zax(:), u(:), eta(:, :), etag(:, :), w(:, :), f(:, :), w1(:, :), p(:, :), &
-                                           phi(:, :), phios(:, :), wos(:, :), workf(:), workp(:), thres(:), fgot(:), pfgot(:), fmax(:)
+                                         phi(:, :), phios(:, :), wos(:, :), workf(:), workp(:), thres(:), fgot(:), pfgot(:), fmax(:)
 
     complex(c_double_complex), parameter :: ic = (0.0d0, 1.0d0)
     real(c_double), parameter :: pi = 2.0D0*dacos(0.0D0)
 
     private freq_out, zex, tend, dtr, q, i, th, a, dcir, r, f0, pitch
-	
+
 contains
 
     subroutine init()
@@ -37,7 +37,7 @@ contains
         nrdp = 4*ne
         lworkp = 8*neqp + 5*nrdp + 21
         liworkp = nrdp + 21
-    
+
         neqf = 6
         lenwrkf = 32*neqp
 
@@ -68,7 +68,7 @@ contains
         !end do
         !close (1)
         !stop
-        
+
         ng = 2
 
     end subroutine init
@@ -81,7 +81,7 @@ contains
 
         allocate (f(6, nt), p(4*ne, nz), u(nz), tax(nt), zax(nz), mean(nz), eta(2, nt), etag(2, nt), w(3, nt - 1), w1(3, nt - 1), &
                   idxre(2, ne), idxim(2, ne), workp(lworkp), iworkp(liworkp), &
-                  wos(3, nt - 1), phi(3, nt), phios(3, nt), workf(lenwrkf), thres(neqf), fgot(neqf), pfgot(neqf), fmax(neqf),&
+                  wos(3, nt - 1), phi(3, nt), phios(3, nt), workf(lenwrkf), thres(neqf), fgot(neqf), pfgot(neqf), fmax(neqf), &
                   !pgot(neqp), ppgot(neqp), pmax(neqp), thres(neqp), workp(lenwrkp), &
                   stat=err_alloc)
 
@@ -154,7 +154,7 @@ contains
         logical(4) pressed, errass
         character(1) key
         integer(c_int), parameter :: esc = 27
-        common/internp/xoutp, itp                             
+        common/internp/xoutp, itp
 
         !solve eq. at t=0
         fp(1) = f(1, 1)*exp(ic*f(2, 1))
@@ -189,7 +189,7 @@ contains
         !    write (1,'(5f17.8)') zax(i), p(1,i), p(ne+1,i), p(10,i), p(ne+10,i)
         !end do
         !close (1)
-        !stop        
+        !stop
 
         eta(:, 1) = eff(p(:, nz))
         etag(:, 1) = pitch**2/(pitch**2 + 1)*eta(:, 1)
@@ -200,34 +200,48 @@ contains
         !end do
         !close (1)
         !stop
-               
+
         errass = .false.
         hstart = 0.0d0
         ptol = 1.0d-7
         method = 2
-        ifail = 0       
-        tstart = tax(1)       
+        ifail = 0
+        tstart = tax(1)
         rtolf = ftol
         workf(:) = 0.0d0
-        
+
         do l = 1, neqf
             thres(l) = 1.0d-8
         end do
 
         call d02pvf(neqf, tstart, f(:, 1), tend, ftol, thres, method, 'usual task', errass, hstart, workf, lenwrkf, ifail)
-        
+
         do i = 1, nt - 1
             twant = i*dt
             call d02pcf(dfdt, twant, tgot, fgot, pfgot, fmax, workf, ifail)
             f(:, i + 1) = fgot
+            w(:, i + 1) = pfgot(2:6:2)
             call calcpex(fgot, pex)
-            eta(:, i + 1) = eff(pex)                   
+            eta(:, i + 1) = eff(pex)
             etag(:, i + 1) = pitch**2/(pitch**2 + 1)*eta(:, nt)
-            
-            write (*, '(a,f10.5,a,f10.6,a,f10.6,a,f10.6,a,f10.6,a,f10.6,\,a)') 'Time = ', tgot, '   |F1| = ', fgot(1), '   |F2| = ', fgot(3), &
-                    '   |F3| = ', fgot(5), '   Eff1 = ', eta(1, i + 1), '   Eff2 = ', eta(2, i + 1), char(13)
+
+            write (*, '(a,f10.5,a,f10.6,a,f10.6,a,f10.6,a,f10.6,a,f10.6,\,a)') 'Time = ', tgot, &
+                '   |F1| = ', fgot(1), '   |F2| = ', fgot(3), '   |F3| = ', fgot(5), &
+                '   Eff1 = ', eta(1, i + 1), '   Eff2 = ', eta(2, i + 1), char(13)
+
+            pressed = peekcharqq()
+            if (pressed) then
+                key = getcharqq()
+                if (ichar(key) .eq. esc) then
+                    write (*, '(/,a)') 'Quit?'
+                    key = getcharqq()
+                    if (ichar(key) .eq. 121 .or. ichar(key) .eq. 89) then
+                        nt = i + 1
+                        return
+                    end if
+                end if
+            end if
         end do
-        
     end subroutine ode4f
 
     function eff(pex) result(eta)
@@ -286,7 +300,7 @@ contains
         xi = (0.5d0*(mean(1) + mean(2)) + sum(mean(2:nz - 1)))*dz
     end function
 
-    subroutine dfdt(t, f, s)       
+    subroutine dfdt(t, f, s)
         implicit none
 
         integer(c_int) :: ii, jj, neqf, iparf, aiparp(1), itp
@@ -296,13 +310,13 @@ contains
             f1, f2, f3, phi1, phi2, phi3, a1, a2, rparf, artolp(1), aatolp(1), arparp(1)
         complex(c_double_complex) x1, x2
         common/internp/xoutp, itp
-   
+
         fp(1) = f(1)*exp(ic*f(2))
         fp(2) = f(3)*exp(ic*f(4))
 
         rparp = 0.0
         iparp = 0
-        itolp = 0       
+        itolp = 0
         rtolp = ptol
         atolp = rtolp
         ioutp = neqp
@@ -317,11 +331,11 @@ contains
         artolp(1) = rtolp
         aatolp(1) = atolp
         arparp(1) = rparp
-        aiparp(1) = iparp                
+        aiparp(1) = iparp
 
         call dopri5_p(neqp, dpdz, z, yp, zex, artolp, aatolp, itolp, soloutp, ioutp, &
                       workp, lworkp, iworkp, liworkp, arparp, aiparp, ididp)
-        
+
         !print *, 'calculating...'
 
         p(:, nz) = yp(:)
@@ -417,7 +431,7 @@ contains
                 f(j, itf) = y(j)
             end do
             call calcpex(y, pex)
-            eta(:, itf) = eff(pex)            
+            eta(:, itf) = eff(pex)
             !eta(:, itf) = eff(p(:, nz))
             etag(:, itf) = pitch**2/(pitch**2 + 1)*eta(:, itf)
             write (*, '(a,f10.5,a,f10.6,a,f10.6,a,f10.6,a,f10.6,a,f10.6,\,a)') 'Time = ', xoutf, '   |F1| = ', abs(f(1,itf)), '   |F2| = ', abs(f(3,itf)), &
@@ -431,7 +445,7 @@ contains
                     f(j, itf) = contd5_f(j, xoutf, con, icomp, nd)
                 end do
                 call calcpex(f(:, itf), pex)
-                eta(:, itf) = eff(pex)            
+                eta(:, itf) = eff(pex)
                 !eta(:, itf) = eff(p(:, nz))
                 etag(:, itf) = pitch**2/(pitch**2 + 1)*eta(:, itf)
                 write (*, '(a,f10.5,a,f10.6,a,f10.6,a,f10.6,a,f10.6,a,f10.6,\,a)') 'Time = ', xoutf, '   |F1| = ', abs(f(1,itf)), '   |F2| = ', abs(f(3,itf)), &
